@@ -11702,7 +11702,8 @@ components:
           type: string
           description: The identifier of a credential request.
         credentialEndpoint:
-          type: boolean
+          type: string
+          format: uri
           description: The URL of the credential endpoint of the credential issuer.
         batchCredentialEndpoint:
           type: string
@@ -11712,8 +11713,11 @@ components:
           type: string
           description: The URL of the deferred credential endpoint of the credential issuer.
         credentialsSupported:
-          type: boolean
-          description: A JSON array describing supported credentials.
+          type: string
+          description: |
+            A JSON object describing supported credential configurations.
+            This property corresponds to the credential_configurations_supported metadata.
+            Note: Due to a breaking change in December 2023, this was changed from a JSON array to a JSON object.
         credentialResponseEncryptionAlgValuesSupported:
           type: array
           items:
@@ -14802,6 +14806,7 @@ components:
           type: array
           items:
             type: object
+            additionalProperties: true
             description: |
               An object representing JWK. See [RFC 7517](https://datatracker.ietf.org/doc/html/rfc7517) for more details.
           description: An array of [JWK](https://datatracker.ietf.org/doc/html/rfc7517)s.
