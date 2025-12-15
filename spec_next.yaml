@@ -11479,6 +11479,32 @@ components:
             Flag that controls whether the CIMD metadata policy is applied to client
             metadata obtained through the Client ID Metadata Document (CIMD)
             mechanism.
+        clientIdMetadataDocumentSupported:
+          type: boolean
+          description: |
+            Indicates whether the Client ID Metadata Document (CIMD) mechanism is
+            supported. When `true`, the service will attempt to retrieve client
+            metadata via CIMD where applicable.
+        cimdAllowlistEnabled:
+          type: boolean
+          description: |
+            Enables the allowlist for CIMD. When `true`, only CIMD endpoints that are
+            on the allowlist are used.
+        cimdAlwaysRetrieved:
+          type: boolean
+          description: |
+            If `true`, CIMD retrieval is always attempted for clients, regardless of
+            other conditions.
+        cimdHttpPermitted:
+          type: boolean
+          description: |
+            Allows CIMD retrieval over plain HTTP. When `false`, only HTTPS CIMD
+            endpoints are allowed.
+        cimdQueryPermitted:
+          type: boolean
+          description: |
+            Allows the use of query parameters when retrieving CIMD metadata. When
+            `false`, query parameters are disallowed for CIMD requests.
         cimdMetadataPolicy:
           type: string
           description: |
