@@ -1485,6 +1485,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '404':
+          description: The client was not found.
         '500':
           $ref: '#/components/responses/500'
       operationId: client_update_api
@@ -1552,6 +1554,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '404':
+          description: The client was not found.
         '500':
           $ref: '#/components/responses/500'
       operationId: client_delete_api
@@ -1935,6 +1939,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '404':
+          description: The client was not found.
         '500':
           $ref: '#/components/responses/500'
       operationId: client_authorization_update_api
@@ -4895,6 +4901,8 @@ paths:
                     'y': j80Y3leZHHnxC_gN-Ols_l_VfEBQkfGDFFDG5LNJKMl
                     x: xAdEkaExYWGGAC1xYjwxzvqcaCyDloylZk04yiE9_OF
                     kid: ec256-enc-001
+        '204':
+          description: 'No content'
         '400':
           $ref: '#/components/responses/400'
         '401':
@@ -7489,6 +7497,8 @@ paths:
         '401':
           $ref: '#/components/responses/401'
         '403':
+          $ref: '#/components/responses/403'
+        '404':
           $ref: '#/components/responses/403'
         '500':
           $ref: '#/components/responses/500'
