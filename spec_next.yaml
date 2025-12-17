@@ -7792,6 +7792,7 @@ paths:
         - Federation Endpoint
   /api/info:
     get:
+      security: []
       summary: Get Server Metadata
       description: |
         get the server version and enabled features
