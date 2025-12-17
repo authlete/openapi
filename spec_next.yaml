@@ -1782,13 +1782,13 @@ paths:
             api.updateClientSecret(clientIdentifier, clientSecret)
       tags:
         - Client Management
-  /api/{serviceId}/client/authorization/get/list/{subject}:
+  /api/{serviceId}/client/authorization/get/list:
     get:
       summary: Get Authorized Applications
       description: |
         Get a list of client applications that an end-user has authorized.
 
-        The subject parameter is required and can be provided either in the path or as a query parameter.
+        The subject parameter is required and can be provided as a query parameter.
       parameters:
         - in: path
           name: serviceId
@@ -1796,13 +1796,6 @@ paths:
           required: true
           schema:
             type: string
-        - in: path
-          name: subject
-          schema:
-            type: string
-          required: true
-          description: |
-            Unique user ID of an end-user.
         - in: query
           name: subject
           schema:
@@ -1864,7 +1857,7 @@ paths:
         - lang: shell
           label: curl
           source: |
-            curl -v https://us.authlete.com/api/client/authorization/get/list/john?start=0\&end=5 \
+            curl -v https://us.authlete.com/api/client/authorization/get/list?subject=john\&start=0\&end=5 \
             -u '21653835348762:uE4NgqeIpuSV_XejQ7Ds3jsgA1yXhjR1MXJ1LbPuyls'
         - lang: java
           label: java
