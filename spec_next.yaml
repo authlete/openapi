@@ -16654,6 +16654,7 @@ components:
       properties:
         requestableScopes:
           type: array
+          nullable: true
           items:
             type: string
     client_extension_requestable_scopes_update_request:
@@ -16678,6 +16679,7 @@ components:
       type: object
       properties:
         requestableScopes:
+          nullable: true
           type: array
           items:
             type: string
