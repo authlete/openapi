@@ -13077,6 +13077,7 @@ components:
             - PRIVATE_KEY_JWT
             - TLS_CLIENT_AUTH
             - SELF_SIGNED_TLS_CLIENT_AUTH
+            - ATTEST_JWT_CLIENT_AUTH
         dpopNonce:
           type: string
           description: |
@@ -13270,6 +13271,8 @@ components:
             - OK
             - TOKEN_EXCHANGE
             - JWT_BEARER
+            - NATIVE_SSO
+            - ID_TOKEN_REISSUABLE
           description: The next action that the authorization server implementation should take.
         responseContent:
           type: string
@@ -14158,6 +14161,7 @@ components:
             - INTERNAL_SERVER_ERROR
             - BAD_REQUEST
             - OK
+            - JWT
           description: The next action that the authorization server implementation should take.
         responseContent:
           type: string
