@@ -13033,6 +13033,12 @@ components:
         credentialResponseEncryptionRequired:
           type: boolean
           description: True if credential responses to this client must be always encrypted.
+        metadataDocumentLocation:
+          type: string
+          format: uri
+          description: |
+            Location of the Client ID Metadata Document that was used for this client.
+            This property is set when client metadata was retrieved via the OAuth Client ID Metadata Document (CIMD) mechanism.
         metadataDocumentExpiresAt:
           type: integer
           format: int64
@@ -13511,13 +13517,6 @@ components:
 
             NOTE: If this property is set to `true`, the `sessionId` request parameter must be provided
             to the `/auth/authorization/issue` API.
-        metadataDocumentLocation:
-          type: string
-          format: uri
-          description: |
-            The location of the client's metadata document that was used to resolve client metadata.
-
-            This property is set when client metadata was retrieved via the [OAuth Client ID Metadata Document](https://datatracker.ietf.org/doc/draft-ietf-oauth-client-id-metadata-document/) (CIMD) mechanism.
         metadataDocumentUsed:
           type: boolean
           description: |
