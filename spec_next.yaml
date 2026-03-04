@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: Authlete API
+  title: Authlete API test CI
   description: |
     Welcome to the **Authlete API documentation**. Authlete is an **API-first service** where every aspect of the 
     platform is configurable via API. This documentation will help you authenticate and integrate with Authlete to 
