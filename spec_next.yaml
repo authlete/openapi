@@ -15608,7 +15608,9 @@ components:
         scopeDetails:
           type: array
           items:
-            $ref: '#/components/schemas/scope'
+            nullable: true
+            allOf:
+              - $ref: '#/components/schemas/scope'
           description: |
             The scopes property of this class is a list of scope names. The property does not hold information
             about scope attributes. This scopeDetails property was newly created to convey information about
