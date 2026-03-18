@@ -14680,10 +14680,12 @@ components:
           description: |
             The certificate path presented by the client during client authentication. These certificates are strings in PEM format.
         properties:
-          type: string
+          type: array
           description: |
             Extra properties to associate with an access token. See [Extra Properties](https://www.authlete.com/developers/definitive_guide/extra_properties/)
             for details.
+          items:
+            $ref: '#/components/schemas/property'
         dpop:
           type: string
           description: |
@@ -15608,9 +15610,7 @@ components:
         scopeDetails:
           type: array
           items:
-            nullable: true
-            allOf:
-              - $ref: '#/components/schemas/scope'
+            $ref: '#/components/schemas/scope'
           description: |
             The scopes property of this class is a list of scope names. The property does not hold information
             about scope attributes. This scopeDetails property was newly created to convey information about
