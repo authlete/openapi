@@ -79,7 +79,7 @@ info:
     If you have any questions or need assistance, our team is here to help:
 
     - [Contact Page](https://www.authlete.com/contact/)
-  version: 3.0.16
+  version: 3.0.17
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
@@ -8177,6 +8177,88 @@ paths:
             api.tokenCreate(req)
       tags:
         - Token Operations
+  /api/{serviceId}/auth/token/create/batch:
+    post:
+      summary: Create Access Tokens in Batch
+      description: |
+        Create access tokens in batch.
+      parameters:
+        - in: path
+          name: serviceId
+          description: A service ID.
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: dryRun
+          description: |
+            If `true`, the request is processed but access tokens are not actually created.
+          required: false
+          schema:
+            type: boolean
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/token_create_request'
+      responses:
+        '200':
+          description: Batch request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/token_create_batch_response'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '500':
+          $ref: '#/components/responses/500'
+      operationId: auth_token_create_batch_api
+      tags:
+        - Token Operations
+  /api/{serviceId}/auth/token/create/batch/status/{tokenBatchRequestId}:
+    get:
+      summary: Get Batch Token Creation Status
+      description: |
+        Get the status of a batch token creation request.
+      parameters:
+        - in: path
+          name: serviceId
+          description: A service ID.
+          required: true
+          schema:
+            type: string
+        - in: path
+          name: tokenBatchRequestId
+          description: |
+            A token batch request ID.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfully retrieved the status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/token_create_batch_status_response'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '500':
+          $ref: '#/components/responses/500'
+      operationId: auth_token_create_batch_status_api
+      tags:
+        - Token Operations
   /api/{serviceId}/auth/token/update:
     post:
       summary: Update Access Token
@@ -10208,7 +10290,7 @@ components:
               ## Requirements by Authlete
 
               - Must consist of printable ASCII letters only.
-              - Must not exceed 200 letters.
+              - Must not exceed 1000 letters.
 
               Note that Authlete allows the application type to be `null`. In other words, a client application
               does not have to choose `web` or `native` as its application type.
@@ -14680,12 +14762,10 @@ components:
           description: |
             The certificate path presented by the client during client authentication. These certificates are strings in PEM format.
         properties:
-          type: array
+          type: string
           description: |
             Extra properties to associate with an access token. See [Extra Properties](https://www.authlete.com/developers/definitive_guide/extra_properties/)
             for details.
-          items:
-            $ref: '#/components/schemas/property'
         dpop:
           type: string
           description: |
@@ -18107,6 +18187,70 @@ components:
             NOTE: A refresh token must be associated with a session ID, which is the ID of the user's authentication
             session, in order to be used to obtain a [Native SSO](https://openid.net/specs/openid-connect-native-sso-1_0.html)-compliant
             ID token in the refresh token flow.
+    token_create_batch_response:
+      type: object
+      description: |
+        Response from a token create batch request.
+      properties:
+        resultCode:
+          type: string
+          description: The result code of the request.
+        resultMessage:
+          type: string
+          description: The result message of the request.
+        requestId:
+          type: string
+          description: The ID of the issued token batch request.
+    token_batch_status:
+      type: object
+      description: |
+        Status of a token batch operation.
+      properties:
+        batchKind:
+          type: string
+          enum:
+            - CREATE
+          description: The kind of batch operation.
+        requestId:
+          type: string
+          description: The request ID.
+        result:
+          type: string
+          enum:
+            - SUCCEEDED
+            - FAILED
+          description: The result of the batch operation.
+        errorCode:
+          type: string
+          description: The error code if the operation failed.
+        errorDescription:
+          type: string
+          description: The error description if the operation failed.
+        tokenCount:
+          type: integer
+          format: int64
+          description: The number of tokens processed.
+        createdAt:
+          type: integer
+          format: int64
+          description: The time at which the batch operation was created (timestamp).
+        modifiedAt:
+          type: integer
+          format: int64
+          description: The time at which the batch operation was last modified (timestamp).
+    token_create_batch_status_response:
+      type: object
+      description: |
+        Response from a token create batch status request.
+      properties:
+        resultCode:
+          type: string
+          description: The result code of the request.
+        resultMessage:
+          type: string
+          description: The result message of the request.
+        status:
+          $ref: '#/components/schemas/token_batch_status'
     token_update_request:
       type: object
       properties:
