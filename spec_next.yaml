@@ -10208,7 +10208,7 @@ components:
               ## Requirements by Authlete
 
               - Must consist of printable ASCII letters only.
-              - Must not exceed 200 letters.
+              - Must not exceed 1000 letters.
 
               Note that Authlete allows the application type to be `null`. In other words, a client application
               does not have to choose `web` or `native` as its application type.
