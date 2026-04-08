@@ -1,4 +1,4 @@
-# Authlete API 3.0.16
+# Authlete API V3.x+
 
 Welcome to the **Authlete API**. Authlete is an API-first authorization and authentication platform that enables you to build OAuth 2.0 and OpenID Connect servers, as well as verifiable credential issuers.
 
