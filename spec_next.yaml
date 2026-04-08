@@ -12725,6 +12725,12 @@ components:
           description: |
             When `true`, client ID aliases starting with `https://` or `http://` are
             prohibited.
+        attestationChallengeTimeWindow:
+          type: integer
+          format: int64
+          description: |
+            The time window of attestation challenges in seconds. This is used for
+            OAuth 2.0 Attestation-Based Client Authentication.
     sns_credentials:
       type: object
       properties:
