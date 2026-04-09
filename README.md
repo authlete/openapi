@@ -1,4 +1,4 @@
-# Authlete API 3.0.16
+# Authlete API V3.0+
 
 Welcome to the **Authlete API**. Authlete is an API-first authorization and authentication platform that enables you to build OAuth 2.0 and OpenID Connect servers, as well as verifiable credential issuers.
 
@@ -290,7 +290,8 @@ If you exceed the limit, you'll receive a `429 Too Many Requests` response.
 
 - [TypeScript/JavaScript SDK](https://github.com/authlete/authlete-typescript-sdk)
 - [Java SDK](https://github.com/authlete/authlete-java-common)
-- [.NET SDK](https://github.com/authlete/authlete-csharp)
+- [Ruby SDK](https://github.com/authlete/authlete-ruby-sdk)
+- [Go SDK](https://github.com/authlete/authlete-go-sdk)
 
 ### Reference Implementations
 
