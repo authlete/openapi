@@ -7496,6 +7496,85 @@ paths:
             api.backchannelAuthenticationComplete(req)
       tags:
         - CIBA
+  /api/{serviceId}/backchannel/logout/token:
+    post:
+      summary: Backchannel Logout Token Issuing
+      description: |
+        The `/backchannel/logout/token` API issues a logout token for a client application
+        in the context of [OpenID Connect Back-Channel Logout 1.0](https://openid.net/specs/openid-connect-backchannel-1_0.html).
+      x-mint:
+        metadata:
+          description: "The `/backchannel/logout/token` API issues a logout token for a client application in the context of [OpenID Connect Back-Channel Logout 1.0](https://openid.net/specs/openid-connect-backchannel-1_0.html)."
+        content: |
+          <Accordion title="Full description" defaultOpen={false}>
+          The caller provides a client identifier and either a subject, a session ID, or both.
+          Authlete generates a logout token that the caller should then POST to the client's
+          registered `backchannelLogoutUri`.
+
+          A response from the `/backchannel/logout/token` API contains an `action` response
+          parameter. The possible values are:
+
+          ## OK
+
+          When the action is `OK`, it indicates that the API call completed successfully and
+          a logout token has been issued. The caller should deliver `logoutToken` to
+          `backchannelLogoutUri`.
+
+          ## SERVER_ERROR
+
+          When the action is `SERVER_ERROR`, it indicates that something has gone wrong on
+          the Authlete side.
+
+          ## CALLER_ERROR
+
+          When the action is `CALLER_ERROR`, it indicates that the API call contained a
+          problem. For example, the call may have been missing required request parameters.
+          </Accordion>
+
+      parameters:
+        - in: path
+          name: serviceId
+          description: A service ID.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/backchannel_logout_token_request'
+            example:
+              clientIdentifier: '1140735077'
+              subject: user123
+              sessionId: my-sid
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/backchannel_logout_token_response'
+              example:
+                action: OK
+                logoutToken: eyJhbGciOiJSUzI1NiJ9...
+                backchannelLogoutUri: https://client.example.com/logout
+                resultCode: A504001
+                resultMessage: '[A504001] The backchannel logout token was successfully issued.'
+          links:
+            authz_process:
+              $ref: '#/components/links/authz_process'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '500':
+          $ref: '#/components/responses/500'
+      operationId: backchannel_logout_token_api
+      tags:
+        - Back-Channel Logout
   /api/{serviceId}/device/authorization:
     post:
       summary: Process Device Authorization Request
@@ -9935,6 +10014,7 @@ components:
         - TLS_CLIENT_AUTH
         - SELF_SIGNED_TLS_CLIENT_AUTH
         - ATTEST_JWT_CLIENT_AUTH
+        - SPIFFE_JWT
     client_extension:
       type: object
       properties:
@@ -10494,6 +10574,17 @@ components:
             authentication request.
 
             This property corresponds to the `backchannel_user_code_parameter` metadata.
+        backchannelLogoutUri:
+          type: string
+          description: |
+            The backchannel logout URI for this client. Used by the service to
+            deliver logout tokens when OpenID Connect Back-Channel Logout 1.0 is
+            triggered.
+        backchannelLogoutSessionRequired:
+          type: boolean
+          description: |
+            The flag indicating whether the client requires that a `sid` (session ID)
+            claim be included in the logout token sent to `backchannelLogoutUri`.
         attributes:
           type: array
           items:
@@ -10817,6 +10908,17 @@ components:
             - EXPLICIT_REGISTRATION
             - METADATA_DOCUMENT
             - STATIC_REGISTRATION
+        spiffeId:
+          type: string
+          description: |
+            The SPIFFE ID of the client. Used for SPIFFE-based client authentication
+            (`SPIFFE_JWT`). Corresponds to the `spiffe_id` client metadata parameter.
+        spiffeBundleEndpoint:
+          type: string
+          description: |
+            The endpoint URL of the SPIFFE bundle for this client. Used to fetch
+            the SPIFFE trust bundle for validating JWT-SVIDs. Corresponds to the
+            `spiffe_bundle_endpoint` client metadata parameter.
     delivery_mode:
       type: string
       enum:
@@ -12731,6 +12833,50 @@ components:
           description: |
             The time window of attestation challenges in seconds. This is used for
             OAuth 2.0 Attestation-Based Client Authentication.
+        clientAttesterRootsEnabled:
+          type: boolean
+          description: |
+            The flag indicating whether the attester roots for Client Attestation JWT
+            x5c chain validation are enabled.
+        clientAttesterRootsOnly:
+          type: boolean
+          description: |
+            The flag indicating whether only client authentication validated via
+            attester roots is accepted.
+        keyAttesterRootsEnabled:
+          type: boolean
+          description: |
+            The flag indicating whether the attester roots for Key Attestation JWT
+            x5c chain validation are enabled.
+        keyAttesterRootsOnly:
+          type: boolean
+          description: |
+            The flag indicating whether only key attestation validated via
+            attester roots is accepted.
+        clientAttesterRoots:
+          type: array
+          items:
+            type: string
+          description: |
+            The trusted root certificates (PEM-encoded X.509) for validating the
+            x5c chain in Client Attestation JWTs.
+        keyAttesterRoots:
+          type: array
+          items:
+            type: string
+          description: |
+            The trusted root certificates (PEM-encoded X.509) for validating the
+            x5c chain in Key Attestation JWTs.
+        backchannelLogoutSupported:
+          type: boolean
+          description: |
+            The flag indicating whether this service supports OpenID Connect
+            Back-Channel Logout 1.0.
+        backchannelLogoutSessionSupported:
+          type: boolean
+          description: |
+            The flag indicating whether this service includes a `sid` (session ID)
+            claim in ID tokens, supporting per-session backchannel logout.
     sns_credentials:
       type: object
       properties:
@@ -13568,6 +13714,11 @@ components:
             authentication request.
 
             This property corresponds to the `backchannel_user_code_parameter` metadata.
+        backchannelLogoutSessionRequired:
+          type: boolean
+          description: |
+            The flag indicating whether the client requires that a `sid` (session ID)
+            claim be included in the logout token sent to `backchannelLogoutUri`.
         dynamicallyRegistered:
           type: boolean
           readOnly: true
@@ -14652,6 +14803,7 @@ components:
             - TLS_CLIENT_AUTH
             - SELF_SIGNED_TLS_CLIENT_AUTH
             - ATTEST_JWT_CLIENT_AUTH
+            - SPIFFE_JWT
         dpopNonce:
           type: string
           description: |
@@ -17256,6 +17408,53 @@ components:
             Flag indicating whether a metadata document was used to resolve client metadata for this request.
 
             When `true`, the client metadata was retrieved via the CIMD mechanism rather than from the Authlete database.
+    backchannel_logout_token_request:
+      type: object
+      required:
+        - clientIdentifier
+      properties:
+        clientIdentifier:
+          type: string
+          description: |
+            The identifier of the client application. Either a client ID or a client
+            alias.
+        subject:
+          type: string
+          description: |
+            The subject (end-user) identifier. The logout token will be issued for
+            this subject. At least one of `subject` or `sessionId` must be provided.
+        sessionId:
+          type: string
+          description: |
+            The session ID (`sid`) identifying the user session to log out. At least
+            one of `subject` or `sessionId` must be provided.
+    backchannel_logout_token_response:
+      type: object
+      properties:
+        resultCode:
+          type: string
+          description: The code which represents the result of the API call.
+        resultMessage:
+          type: string
+          description: A short message which explains the result of the API call.
+        action:
+          type: string
+          enum:
+            - OK
+            - SERVER_ERROR
+            - CALLER_ERROR
+          description: |
+            The next action that the API caller should take.
+        logoutToken:
+          type: string
+          description: |
+            The logout token issued for the client. The caller should deliver this
+            token to the client's `backchannelLogoutUri`.
+        backchannelLogoutUri:
+          type: string
+          description: |
+            The backchannel logout URI of the client. The caller should POST the
+            `logoutToken` to this URI.
     device_authorization_request:
       type: object
       required:
