@@ -161,6 +161,9 @@ tags:
   - name: Native SSO
     description: API endpoints for Native SSO
     x-tag-expanded: false
+  - name: Audit Logs
+    description: API endpoints for retrieving audit logs, hosted on the Authlete IdP server.
+    x-tag-expanded: false
 paths:
   /api/{serviceId}/service/get:
     get:
@@ -299,6 +302,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: service_get_api
@@ -480,6 +485,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: service_get_list_api
@@ -673,6 +680,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: service_create_api
@@ -918,6 +927,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: service_update_api
@@ -979,6 +990,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: service_delete_api
@@ -1007,6 +1020,295 @@ paths:
             api.deleteService(serviceId)
       tags:
         - Service Management
+  /api/service:
+    servers:
+      - url: https://login.authlete.com
+        description: IDP Server
+        x-speakeasy-server-id: idp
+    post:
+      summary: Create Service (IDP)
+      description: |
+        Create a new service on the API server, belonging to the specified organization.
+        A service can be created with an organization token or by a user with the CREATE_SERVICE role.
+
+        This endpoint is hosted on the Authlete IdP server (`https://login.authlete.com`),
+        not on the regional API clusters.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/service_create_idp_request'
+            example:
+              apiServerId: 76281
+              organizationId: 123456789012345
+              service:
+                serviceName: My service
+                issuer: https://my-service.example.com
+      responses:
+        '200':
+          description: Service created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/service'
+              example:
+                apiKey: 21653835348762
+                serviceName: My service
+                issuer: https://my-service.example.com
+                createdAt: 1639373421000
+                modifiedAt: 1639373421000
+        '400':
+          $ref: '#/components/responses/idp_400'
+        '401':
+          $ref: '#/components/responses/idp_401'
+        '403':
+          $ref: '#/components/responses/idp_403'
+        '500':
+          $ref: '#/components/responses/idp_500'
+      operationId: service_create_idp_api
+      x-speakeasy-group: service
+      x-speakeasy-name-override: create
+      x-code-samples:
+        - lang: shell
+          label: curl
+          source: |
+            curl -v -X POST https://login.authlete.com/api/service \
+            -H 'Content-Type:application/json' \
+            -H 'Authorization: Bearer <organization-token>' \
+            -d '{ "apiServerId": 76281, "organizationId": 123456789012345, "service": { "serviceName": "My Service" } }'
+      tags:
+        - Service Management
+  /api/service/remove:
+    servers:
+      - url: https://login.authlete.com
+        description: IDP Server
+        x-speakeasy-server-id: idp
+    post:
+      summary: Remove Service (IDP) ⚡
+      description: |
+        Delete a service from the API server.
+        A service can be deleted with an organization token or by a user with the MODIFY_SERVICE role.
+
+        This endpoint is hosted on the Authlete IdP server (`https://login.authlete.com`),
+        not on the regional API clusters.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/service_remove_idp_request'
+            example:
+              apiServerId: 76281
+              organizationId: 123456789012345
+              serviceId: 21653835348762
+      responses:
+        '204':
+          description: Service removed successfully.
+        '400':
+          $ref: '#/components/responses/idp_400'
+        '401':
+          $ref: '#/components/responses/idp_401'
+        '403':
+          $ref: '#/components/responses/idp_403'
+        '500':
+          $ref: '#/components/responses/idp_500'
+      operationId: service_remove_idp_api
+      x-speakeasy-group: service
+      x-speakeasy-name-override: remove
+      x-code-samples:
+        - lang: shell
+          label: curl
+          source: |
+            curl -v -X POST https://login.authlete.com/api/service/remove \
+            -H 'Content-Type:application/json' \
+            -H 'Authorization: Bearer <organization-token>' \
+            -d '{ "apiServerId": 76281, "organizationId": 123456789012345, "serviceId": 21653835348762 }'
+      tags:
+        - Service Management
+  /api/audit/entries:
+    servers:
+      - url: https://login.authlete.com
+        description: IDP Server
+        x-speakeasy-server-id: idp
+    get:
+      summary: Get Audit Logs
+      description: |
+        Retrieve audit logs as a cursor-paginated list. Results can be filtered by time range, event type,
+        and organization.
+      x-mint:
+        metadata:
+          description: "Retrieve audit logs as a cursor-paginated list. Results can be filtered by time range, event type, and organization."
+        content: |
+          <Accordion title="Full description" defaultOpen={false}>
+          The response contains a page of roughly `limit` entries together with a `nextCursor` value.
+          Entries sharing the same timestamp are never split across pages, so a page may occasionally
+          contain more than `limit` entries. To fetch the next page, repeat the request with the `cursor`
+          parameter set to the `nextCursor` value from the previous response, keeping the other filter
+          parameters unchanged. `nextCursor` is absent on the last page. If both `before` and `cursor`
+          are provided, `cursor` takes precedence.
+
+          This endpoint is hosted on the Authlete IdP server (`https://login.authlete.com`),
+          not on the regional API clusters.
+          </Accordion>
+
+      parameters:
+        - name: after
+          in: query
+          required: false
+          description: Return logs after this timestamp (ISO 8601).
+          schema:
+            type: string
+            format: date-time
+        - name: before
+          in: query
+          required: false
+          description: Return logs before this timestamp (ISO 8601).
+          schema:
+            type: string
+            format: date-time
+        - name: types
+          in: query
+          required: false
+          description: |
+            Filter by event type (e.g. `service.create`, `security.login`, `client.create`).
+            Can be specified multiple times. The set of available event types is environment-specific
+            and includes server-side types; retrieve the full list from the `/api/audit/types` endpoint.
+          schema:
+            type: array
+            uniqueItems: true
+            items:
+              type: string
+              example: service.create
+        - name: organizationId
+          in: query
+          required: false
+          description: |
+            The organization to retrieve audit logs for. Not required when authenticating with an
+            organization token — the token's own organization is used, and a differing value is
+            rejected. Required for user access tokens, unless the user is an Authlete administrator
+            (administrators may omit it to query across all organizations).
+          schema:
+            type: integer
+            format: int64
+        - name: limit
+          in: query
+          required: false
+          description: |
+            The maximum number of entries to return per page. Values outside the allowed range are
+            clamped; the effective value is echoed back in the response.
+          schema:
+            type: integer
+            default: 100
+            minimum: 1
+            maximum: 1000
+        - name: cursor
+          in: query
+          required: false
+          description: |
+            An opaque cursor returned as `nextCursor` by a previous response. When provided, it takes
+            precedence over the `before` parameter.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: A page of audit log entries matching the query.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/audit_entries_get_response'
+              example:
+                entries:
+                  - event: service.create
+                    status: completed
+                    timestamp: '2026-06-01T12:34:56Z'
+                    cluster: us
+                    path: /api/service
+                    remoteAddr: 203.0.113.10
+                    userAgent: curl/8.4.0
+                    user: admin@example.com
+                    details:
+                      serviceId: 21653835348762
+                      organizationId: 123456789012345
+                nextCursor: MjAyNi0wNi0wMVQxMjozNDo1Nlo
+                limit: 100
+        '400':
+          $ref: '#/components/responses/idp_400'
+        '401':
+          $ref: '#/components/responses/idp_401'
+        '403':
+          $ref: '#/components/responses/idp_403'
+        '500':
+          $ref: '#/components/responses/idp_500'
+      operationId: audit_entries_get_idp_api
+      x-speakeasy-group: audit
+      x-speakeasy-name-override: get
+      x-speakeasy-pagination:
+        type: cursor
+        inputs:
+          - name: cursor
+            in: parameters
+            type: cursor
+        outputs:
+          nextCursor: $.nextCursor
+      x-code-samples:
+        - lang: shell
+          label: curl
+          source: |
+            curl -v "https://login.authlete.com/api/audit/entries?types=service.create&limit=100" \
+            -H 'Authorization: Bearer <organization-token>'
+      tags:
+        - Audit Logs
+  /api/audit/types:
+    servers:
+      - url: https://login.authlete.com
+        description: IDP Server
+        x-speakeasy-server-id: idp
+    get:
+      summary: Get Audit Log Event Types
+      description: |
+        Returns the list of available audit log event types for this environment.
+
+        Accessible with a user access token or an organization token that has the
+        `view_audit_log` permission (e.g. a token created with the `admin` or
+        `audit_reader` preset).
+
+        This endpoint is hosted on the Authlete IdP server (`https://login.authlete.com`),
+        not on the regional API clusters.
+      responses:
+        '200':
+          description: List of available audit event type strings.
+          content:
+            application/json:
+              schema:
+                type: array
+                uniqueItems: true
+                items:
+                  type: string
+              example:
+                - organization.create
+                - security.login
+                - service.create
+                - service.delete
+        '400':
+          $ref: '#/components/responses/idp_400'
+        '401':
+          $ref: '#/components/responses/idp_401'
+        '403':
+          $ref: '#/components/responses/idp_403'
+        '500':
+          $ref: '#/components/responses/idp_500'
+      operationId: audit_types_get_idp_api
+      x-speakeasy-group: audit
+      x-speakeasy-name-override: getTypes
+      x-code-samples:
+        - lang: shell
+          label: curl
+          source: |
+            curl -v https://login.authlete.com/api/audit/types \
+            -H 'Authorization: Bearer <access-token>'
+      tags:
+        - Audit Logs
   /api/{serviceId}/client/get/{clientId}:
     get:
       summary: Get Client
@@ -1079,6 +1381,10 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '404':
+          $ref: '#/components/responses/404'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_get_api
@@ -1220,6 +1526,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_get_list_api
@@ -1355,6 +1663,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_create_api
@@ -1509,6 +1819,8 @@ paths:
           $ref: '#/components/responses/403'
         '404':
           description: The client was not found.
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_update_api
@@ -1578,6 +1890,8 @@ paths:
           $ref: '#/components/responses/403'
         '404':
           description: The client was not found.
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_delete_api
@@ -1648,6 +1962,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_flag_update_api
@@ -1693,6 +2009,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_secret_refresh_api
@@ -1772,6 +2090,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_secret_update_api
@@ -1872,6 +2192,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_authorization_get_list_api
@@ -1912,6 +2234,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_authorization_get_list_api_post
@@ -2001,6 +2325,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_authorization_get_list_by_subject_api
@@ -2056,6 +2382,8 @@ paths:
           $ref: '#/components/responses/403'
         '404':
           description: The client was not found.
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_authorization_update_api
@@ -2138,6 +2466,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_authorization_delete_api
@@ -2191,6 +2521,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/client_authorization_delete_response'
+        '429':
+          $ref: '#/components/responses/429'
       operationId: client_authorization_delete_api_post
       tags:
         - Client Management
@@ -2259,6 +2591,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_authorization_delete_by_subject_api
@@ -2340,6 +2674,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_granted_scopes_get_api
@@ -2393,6 +2729,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/client_authorization_delete_response'
+        '429':
+          $ref: '#/components/responses/429'
       operationId: client_granted_scopes_get_api_post
       tags:
         - Client Management
@@ -2461,6 +2799,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_granted_scopes_get_by_subject_api
@@ -2509,6 +2849,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_granted_scopes_delete_api
@@ -2579,6 +2921,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_granted_scopes_delete_by_subject_api
@@ -3133,6 +3477,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_authorization_api
@@ -3311,6 +3657,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_authorization_fail_api
@@ -3498,6 +3846,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_authorization_issue_api
@@ -3580,6 +3930,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: pushed_auth_req_api
@@ -3658,6 +4010,12 @@ paths:
           return process(parameters, clientId, clientSecret);
           &#125;
           ```
+          **Note**: The `jwtAtClaims` request parameter is effective only when this API directly issues an access
+          token, i.e., in the `client_credentials` grant flow (and the Native SSO branch of Token Exchange). For
+          other grant flows, additional JWT claims must be set via the corresponding API instead: `/auth/authorization/issue`
+          (authorization_code), `/auth/backchannel/authentication/complete` (CIBA), or `/auth/device/complete`
+          (device_code). `jwtAtClaims` is silently ignored when sent with other grants.
+
           The response from `/auth/token` API has some parameters. Among them, it is action parameter that
           the service implementation should check first because it denotes the next action that the authorization
           server implementation should take. According to the value of action, the authorization server
@@ -4077,6 +4435,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_token_api
@@ -4216,6 +4576,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_token_fail_api
@@ -4373,6 +4735,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_token_issue_api
@@ -4611,6 +4975,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_introspection_api
@@ -4768,6 +5134,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_introspection_standard_api
@@ -4966,6 +5334,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_revocation_api
@@ -5166,6 +5536,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_userinfo_api
@@ -5366,6 +5738,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_userinfo_issue_api
@@ -5432,6 +5806,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: idtoken_reissue_api
@@ -5474,6 +5850,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: grant_m_api
@@ -5549,6 +5927,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: service_jwks_get_api
@@ -5904,6 +6284,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: service_configuration_api
@@ -6070,6 +6452,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_registration_api
@@ -6270,6 +6654,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_registration_get_api
@@ -6474,6 +6860,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_registration_update_api
@@ -6650,6 +7038,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_registration_delete_api
@@ -7015,6 +7405,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: backchannel_authentication_api
@@ -7173,6 +7565,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: backchannel_authentication_issue_api
@@ -7278,6 +7672,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: backchannel_authentication_fail_api
@@ -7460,6 +7856,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: backchannel_authentication_complete_api
@@ -7496,6 +7894,87 @@ paths:
             api.backchannelAuthenticationComplete(req)
       tags:
         - CIBA
+  /api/{serviceId}/backchannel/logout/token:
+    post:
+      summary: Backchannel Logout Token Issuing
+      description: |
+        The `/backchannel/logout/token` API issues a logout token for a client application
+        in the context of [OpenID Connect Back-Channel Logout 1.0](https://openid.net/specs/openid-connect-backchannel-1_0.html).
+      x-mint:
+        metadata:
+          description: "The `/backchannel/logout/token` API issues a logout token for a client application in the context of [OpenID Connect Back-Channel Logout 1.0](https://openid.net/specs/openid-connect-backchannel-1_0.html)."
+        content: |
+          <Accordion title="Full description" defaultOpen={false}>
+          The caller provides a client identifier and either a subject, a session ID, or both.
+          Authlete generates a logout token that the caller should then POST to the client's
+          registered `backchannelLogoutUri`.
+
+          A response from the `/backchannel/logout/token` API contains an `action` response
+          parameter. The possible values are:
+
+          ## OK
+
+          When the action is `OK`, it indicates that the API call completed successfully and
+          a logout token has been issued. The caller should deliver `logoutToken` to
+          `backchannelLogoutUri`.
+
+          ## SERVER_ERROR
+
+          When the action is `SERVER_ERROR`, it indicates that something has gone wrong on
+          the Authlete side.
+
+          ## CALLER_ERROR
+
+          When the action is `CALLER_ERROR`, it indicates that the API call contained a
+          problem. For example, the call may have been missing required request parameters.
+          </Accordion>
+
+      parameters:
+        - in: path
+          name: serviceId
+          description: A service ID.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/backchannel_logout_token_request'
+            example:
+              clientIdentifier: '1140735077'
+              subject: user123
+              sessionId: my-sid
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/backchannel_logout_token_response'
+              example:
+                action: OK
+                logoutToken: eyJhbGciOiJSUzI1NiJ9...
+                backchannelLogoutUri: https://client.example.com/logout
+                resultCode: A504001
+                resultMessage: '[A504001] The backchannel logout token was successfully issued.'
+          links:
+            authz_process:
+              $ref: '#/components/links/authz_process'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
+        '500':
+          $ref: '#/components/responses/500'
+      operationId: backchannel_logout_token_api
+      tags:
+        - Back-Channel Logout
   /api/{serviceId}/device/authorization:
     post:
       summary: Process Device Authorization Request
@@ -7651,6 +8130,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: device_authorization_api
@@ -7779,6 +8260,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: device_verification_api
@@ -7917,6 +8400,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: device_complete_api
@@ -8054,6 +8539,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_token_get_list_api
@@ -8144,6 +8631,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_token_create_api
@@ -8232,6 +8721,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_token_update_api
@@ -8296,6 +8787,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_token_delete_api
@@ -8330,6 +8823,34 @@ paths:
       summary: Revoke Access Token
       description: |
         Revoke an access token.
+      x-mint:
+        metadata:
+          description: "Revoke an access token."
+        content: |
+          <Accordion title="Full description" defaultOpen={false}>
+          Bulk revocation with `clientIdentifier` only, `clientIdentifier` + `subject`, or `subject` only deletes at most **20 tokens per request** (the default of `token.revoke.count.max` in `ServerConfiguration.java`). If the target has more than 20 tokens, the response `count` will be 20 and the remainder is left untouched. To fully wipe them, call the endpoint repeatedly until `count` returns 0.
+
+          ### Safe bulk revocation under ongoing service: the lock-then-revoke pattern
+
+          When you call `/auth/token/revoke` repeatedly with `clientIdentifier` to wipe all tokens for a client that is still serving live traffic, the following problems arise:
+
+          - Each call deletes at most 20 tokens, so a loop is required.
+          - During the loop the client can keep issuing and refreshing tokens, so the loop may not converge, or it may collateral-delete legitimate tokens issued after the revocation started.
+          - For a public client whose refresh token has leaked (no `client_secret` to rotate), the attacker can keep refreshing while the cleanup runs.
+
+          The safe and reliable pattern is to **temporarily lock the client first, then revoke**.
+
+          1. Call `POST /api/client/lock_flag/update/&#123;clientIdentifier&#125;` with `clientLocked: true`.
+            - All subsequent token-endpoint calls for this client (`authorization_code`, `refresh_token`, `client_credentials`, etc.) are rejected with `invalid_client` (e.g. `A458101`).
+            - Existing tokens are also rejected by `/auth/introspection` with `invalid_token` (`A097303`: "The client application associated with the presented access token is locked.").
+            - This immediately stops the attacker's refresh path — including the public-client RT-leak case where there is no `client_secret` to rotate.
+          2. Call `POST /api/auth/token/revoke` with `clientIdentifier` in a loop until the response `count` reaches 0.
+            - Because issuance is stopped, the loop converges deterministically.
+            - All existing tokens are physically deleted, eliminating any leftover leaked tokens.
+          3. Call `POST /api/client/lock_flag/update/&#123;clientIdentifier&#125;` with `clientLocked: false` to return to normal operation.
+            - End users re-authenticate and receive fresh tokens.
+          </Accordion>
+
       parameters:
         - in: path
           name: serviceId
@@ -8367,6 +8888,8 @@ paths:
           $ref: '#/components/responses/403'
         '404':
           $ref: '#/components/responses/404'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: auth_token_revoke_api
@@ -8448,6 +8971,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: jose_verify_api
@@ -8571,10 +9096,22 @@ paths:
           schema:
             type: string
       requestBody:
+        required: true
         content:
           application/json:
             schema:
               type: object
+              properties:
+                entityTypes:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/entity_type'
+                  description: |
+                    The entity types for which the entity configuration is requested.
+                    When omitted or empty, it defaults to `OPENID_PROVIDER` only
+                    (backward compatibility). Unsupported entity types are ignored.
+                    `OPENID_CREDENTIAL_ISSUER` requires the Verifiable Credentials
+                    feature (Authlete 3.0+).
       responses:
         '200':
           description: Federation configuration retrieved successfully
@@ -8588,6 +9125,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: federation_configuration_api
@@ -8666,6 +9205,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: federation_registration_api
@@ -8702,6 +9243,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: info_api
@@ -8739,6 +9282,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_extension_requestables_scopes_get_api
@@ -8782,6 +9327,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_extension_requestables_scopes_update_api_post
@@ -8824,6 +9371,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_extension_requestables_scopes_update_api
@@ -8857,6 +9406,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: client_extension_requestables_scopes_delete_api
@@ -8897,6 +9448,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: hsk_create_api
@@ -8933,6 +9486,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: hsk_delete_api
@@ -8969,6 +9524,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: hsk_get_api
@@ -9000,6 +9557,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: hsk_get_list_api
@@ -9055,6 +9614,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: vci_metadata_api
@@ -9093,6 +9654,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: vci_jwtissuer_api
@@ -9131,6 +9694,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: vci_jwks_api
@@ -9169,6 +9734,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: vci_offer_create_api
@@ -9207,6 +9774,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: vci_offer_info_api
@@ -9245,6 +9814,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: vci_single_parse_api
@@ -9280,6 +9851,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: vci_single_issue_api
@@ -9318,6 +9891,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: vci_batch_parse_api
@@ -9353,6 +9928,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: vci_batch_issue_api
@@ -9421,6 +9998,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: vci_deferred_parse_api
@@ -9456,6 +10035,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: vci_deferred_issue_api
@@ -9494,6 +10075,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       tags:
@@ -9531,6 +10114,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       tags:
@@ -9638,6 +10223,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: native_sso_api
@@ -9731,6 +10318,8 @@ paths:
           $ref: '#/components/responses/401'
         '403':
           $ref: '#/components/responses/403'
+        '429':
+          $ref: '#/components/responses/429'
         '500':
           $ref: '#/components/responses/500'
       operationId: native_sso_logout_api
@@ -9935,6 +10524,7 @@ components:
         - TLS_CLIENT_AUTH
         - SELF_SIGNED_TLS_CLIENT_AUTH
         - ATTEST_JWT_CLIENT_AUTH
+        - SPIFFE_JWT
     client_extension:
       type: object
       properties:
@@ -10494,6 +11084,17 @@ components:
             authentication request.
 
             This property corresponds to the `backchannel_user_code_parameter` metadata.
+        backchannelLogoutUri:
+          type: string
+          description: |
+            The backchannel logout URI for this client. Used by the service to
+            deliver logout tokens when OpenID Connect Back-Channel Logout 1.0 is
+            triggered.
+        backchannelLogoutSessionRequired:
+          type: boolean
+          description: |
+            The flag indicating whether the client requires that a `sid` (session ID)
+            claim be included in the logout token sent to `backchannelLogoutUri`.
         attributes:
           type: array
           items:
@@ -10817,6 +11418,17 @@ components:
             - EXPLICIT_REGISTRATION
             - METADATA_DOCUMENT
             - STATIC_REGISTRATION
+        spiffeId:
+          type: string
+          description: |
+            The SPIFFE ID of the client. Used for SPIFFE-based client authentication
+            (`SPIFFE_JWT`). Corresponds to the `spiffe_id` client metadata parameter.
+        spiffeBundleEndpoint:
+          type: string
+          description: |
+            The endpoint URL of the SPIFFE bundle for this client. Used to fetch
+            the SPIFFE trust bundle for validating JWT-SVIDs. Corresponds to the
+            `spiffe_bundle_endpoint` client metadata parameter.
     delivery_mode:
       type: string
       enum:
@@ -12731,6 +13343,50 @@ components:
           description: |
             The time window of attestation challenges in seconds. This is used for
             OAuth 2.0 Attestation-Based Client Authentication.
+        clientAttesterRootsEnabled:
+          type: boolean
+          description: |
+            The flag indicating whether the attester roots for Client Attestation JWT
+            x5c chain validation are enabled.
+        clientAttesterRootsOnly:
+          type: boolean
+          description: |
+            The flag indicating whether only client authentication validated via
+            attester roots is accepted.
+        keyAttesterRootsEnabled:
+          type: boolean
+          description: |
+            The flag indicating whether the attester roots for Key Attestation JWT
+            x5c chain validation are enabled.
+        keyAttesterRootsOnly:
+          type: boolean
+          description: |
+            The flag indicating whether only key attestation validated via
+            attester roots is accepted.
+        clientAttesterRoots:
+          type: array
+          items:
+            type: string
+          description: |
+            The trusted root certificates (PEM-encoded X.509) for validating the
+            x5c chain in Client Attestation JWTs.
+        keyAttesterRoots:
+          type: array
+          items:
+            type: string
+          description: |
+            The trusted root certificates (PEM-encoded X.509) for validating the
+            x5c chain in Key Attestation JWTs.
+        backchannelLogoutSupported:
+          type: boolean
+          description: |
+            The flag indicating whether this service supports OpenID Connect
+            Back-Channel Logout 1.0.
+        backchannelLogoutSessionSupported:
+          type: boolean
+          description: |
+            The flag indicating whether this service includes a `sid` (session ID)
+            claim in ID tokens, supporting per-session backchannel logout.
     sns_credentials:
       type: object
       properties:
@@ -12925,6 +13581,9 @@ components:
         format:
           type: string
           description: The value of the format parameter in the credential request.
+        credentialConfigurationId:
+          type: string
+          description: The identifier of the credential configuration referenced by the credential request.
         bindingKey:
           type: string
           description: The binding key specified by the proof in the credential request.
@@ -13009,6 +13668,81 @@ components:
             corresponds to the `credential_response_encryption.encryption_required metadata`. If this flag
             is `true`, every credential request to the credential issuer must include the `credential_response_encryption`
             property.
+        requireCredentialRequestEncryption:
+          type: boolean
+          description: |
+            The boolean flag indicating whether credential request encryption is required. This property
+            corresponds to the `credential_request_encryption.encryption_required` metadata. If this flag
+            is `true`, every credential request to the credential issuer must be encrypted.
+        credentialResponseEncryptionZipValuesSupported:
+          type: array
+          items:
+            type: string
+          description: |
+            The supported JWE `zip` (compression) algorithms for credential response encryption. This
+            property corresponds to the `credential_response_encryption.zip_values_supported` metadata.
+        batchSize:
+          type: integer
+          description: |
+            The maximum array size for the `proofs` parameter in a credential request. This property
+            corresponds to the `batch_credential_issuance.batch_size` metadata. If the value of this
+            property is 2 or greater, the `batch_credential_issuance` parameter will appear in the
+            response from the credential issuer metadata endpoint.
+    audit_log_entry:
+      type: object
+      properties:
+        event:
+          type: string
+          description: The audit event type (e.g. service.create, security.login).
+        status:
+          type: string
+          enum:
+            - completed
+            - failed
+          description: Whether the action completed successfully or failed.
+        timestamp:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            When the event occurred (ISO 8601). May be null for entries without a recorded
+            timestamp; such entries are only returned on the first page of results.
+        cluster:
+          type: string
+          description: The cluster or region where the event occurred.
+        path:
+          type: string
+          description: The API path that triggered the event.
+        remoteAddr:
+          type: string
+          description: The IP address of the client that performed the action.
+        userAgent:
+          type: string
+          description: The user agent of the client.
+        user:
+          type: string
+          description: The user or token that performed the action.
+        details:
+          type: object
+          additionalProperties: true
+          description: Additional event-specific metadata.
+    idp_error:
+      type: object
+      description: |
+        Error response returned by the Authlete IdP server. Unlike the main API's
+        `resultCode`/`resultMessage` format, IdP errors carry a human-readable `error` message,
+        optionally accompanied by contextual fields (such as `organizationId` or `apiServerId`).
+        Request validation failures instead return an `errors` array of per-field messages.
+      properties:
+        error:
+          type: string
+          description: A human-readable error message.
+        errors:
+          type: array
+          items:
+            type: string
+          description: Per-field validation error messages, present for request validation failures.
+      additionalProperties: true
     verified_claims_validation_schema:
       type: string
       description: |
@@ -13090,6 +13824,66 @@ components:
             $ref: '#/components/schemas/service'
           description: |
             An array of services.
+    service_create_idp_request:
+      type: object
+      required:
+        - organizationId
+      properties:
+        apiServerId:
+          type: integer
+          format: int64
+          description: |
+            The numeric ID of the API server to create the service on. Official SDKs inject
+            this automatically for known Authlete clusters, so it can be omitted there;
+            all other callers must provide it.
+        organizationId:
+          type: integer
+          format: int64
+          description: The numeric ID of the organization the service belongs to.
+        service:
+          $ref: '#/components/schemas/service'
+    service_remove_idp_request:
+      type: object
+      required:
+        - organizationId
+        - serviceId
+      properties:
+        apiServerId:
+          type: integer
+          format: int64
+          description: |
+            The numeric ID of the API server the service belongs to. Official SDKs inject
+            this automatically for known Authlete clusters, so it can be omitted there;
+            all other callers must provide it.
+        organizationId:
+          type: integer
+          format: int64
+          description: The numeric ID of the organization the service belongs to.
+        serviceId:
+          type: integer
+          format: int64
+          description: The numeric ID of the service to delete.
+    audit_entries_get_response:
+      type: object
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/audit_log_entry'
+          description: |
+            The audit log entries on this page, in reverse chronological order. Entries sharing the
+            same timestamp are never split across pages, so a page may contain more than `limit` entries.
+        nextCursor:
+          type: string
+          nullable: true
+          description: |
+            An opaque cursor pointing at the next page. Pass this value as the `cursor` parameter of the
+            next request to fetch the following page. Absent or `null` on the last page.
+        limit:
+          type: integer
+          description: |
+            The effective page size limit applied to this response. May differ from the requested `limit`
+            if the requested value was outside the allowed range.
     client_type:
       type: string
       description: |
@@ -13568,6 +14362,11 @@ components:
             authentication request.
 
             This property corresponds to the `backchannel_user_code_parameter` metadata.
+        backchannelLogoutSessionRequired:
+          type: boolean
+          description: |
+            The flag indicating whether the client requires that a `sid` (session ID)
+            claim be included in the logout token sent to `backchannelLogoutUri`.
         dynamicallyRegistered:
           type: boolean
           readOnly: true
@@ -14551,6 +15350,13 @@ components:
           $ref: '#/components/schemas/authorization_ticket_info'
           description: |
             The information about the ticket.
+        consentedClaims:
+          type: array
+          items:
+            type: string
+          description: |
+            the claims that the user has consented for the client application
+            to know.
     pushed_authorization_request:
       type: object
       required:
@@ -14652,6 +15458,7 @@ components:
             - TLS_CLIENT_AUTH
             - SELF_SIGNED_TLS_CLIENT_AUTH
             - ATTEST_JWT_CLIENT_AUTH
+            - SPIFFE_JWT
         dpopNonce:
           type: string
           description: |
@@ -14734,6 +15541,8 @@ components:
           type: string
           description: |
             Additional claims that are added to the payload part of the JWT access token.
+
+            Effective only in the client_credentials grant flow (and the Native SSO branch of Token Exchange). For other grant flows, set additional JWT claims via the corresponding API: /auth/authorization/issue (authorization_code), /auth/backchannel/authentication/complete (CIBA), /auth/device/complete (device_code). The parameter is silently ignored when sent with other grants.
         oauthClientAttestation:
           type: string
           description: |
@@ -17256,6 +18065,60 @@ components:
             Flag indicating whether a metadata document was used to resolve client metadata for this request.
 
             When `true`, the client metadata was retrieved via the CIMD mechanism rather than from the Authlete database.
+        consentedClaims:
+          type: array
+          items:
+            type: string
+          description: |
+            the claims that the user has consented for the client application
+            to know.
+    backchannel_logout_token_request:
+      type: object
+      required:
+        - clientIdentifier
+      properties:
+        clientIdentifier:
+          type: string
+          description: |
+            The identifier of the client application. Either a client ID or a client
+            alias.
+        subject:
+          type: string
+          description: |
+            The subject (end-user) identifier. The logout token will be issued for
+            this subject. At least one of `subject` or `sessionId` must be provided.
+        sessionId:
+          type: string
+          description: |
+            The session ID (`sid`) identifying the user session to log out. At least
+            one of `subject` or `sessionId` must be provided.
+    backchannel_logout_token_response:
+      type: object
+      properties:
+        resultCode:
+          type: string
+          description: The code which represents the result of the API call.
+        resultMessage:
+          type: string
+          description: A short message which explains the result of the API call.
+        action:
+          type: string
+          enum:
+            - OK
+            - SERVER_ERROR
+            - CALLER_ERROR
+          description: |
+            The next action that the API caller should take.
+        logoutToken:
+          type: string
+          description: |
+            The logout token issued for the client. The caller should deliver this
+            token to the client's `backchannelLogoutUri`.
+        backchannelLogoutUri:
+          type: string
+          description: |
+            The backchannel logout URI of the client. The caller should POST the
+            `logoutToken` to this URI.
     device_authorization_request:
       type: object
       required:
@@ -17812,6 +18675,13 @@ components:
             - SUCCESS
           description: |
             The next action that the authorization server implementation should take.
+        consentedClaims:
+          type: array
+          items:
+            type: string
+          description: |
+            the claims that the user has consented for the client application
+            to know.
     token_get_list_response:
       type: object
       properties:
@@ -18298,10 +19168,14 @@ components:
 
             Both the numeric client ID and the alias are recognized as an identifier
             of a client.
+
+            Bulk revocation with `clientIdentifier` only or `clientIdentifier` + `subject` deletes at most **20 tokens per request** (the default of `token.revoke.count.max` in `ServerConfiguration.java`). If the target has more than 20 tokens, the response `count` will be 20 and the remainder is left untouched. To fully wipe them, call the endpoint repeatedly until `count` returns 0.
         subject:
           type: string
           description: |
             The subject of a resource owner.
+
+            Bulk revocation with `clientIdentifier` + `subject` or `subject` only deletes at most **20 tokens per request** (the default of `token.revoke.count.max` in `ServerConfiguration.java`). If the target has more than 20 tokens, the response `count` will be 20 and the remainder is left untouched. To fully wipe them, call the endpoint repeatedly until `count` returns 0.
     token_revoke_response:
       type: object
       properties:
@@ -18313,7 +19187,10 @@ components:
           description: A short message which explains the result of the API call.
         count:
           type: integer
-          description: The number of tokens revoked
+          description: |
+            The number of tokens revoked.
+
+            If the target has more than 20 tokens, the response `count` will be 20 and the remainder is left untouched. To fully wipe them, call the endpoint repeatedly until `count` returns 0.
     jose_verify_request:
       type: object
       required:
@@ -18379,6 +19256,18 @@ components:
             type: string
           description: |
             The list of error messages.
+    entity_type:
+      type: string
+      enum:
+        - OPENID_RELYING_PARTY
+        - OPENID_PROVIDER
+        - OAUTH_AUTHORIZATION_SERVER
+        - OAUTH_CLIENT
+        - OAUTH_RESOURCE
+        - FEDERATION_ENTITY
+        - OPENID_CREDENTIAL_ISSUER
+      description: |
+        The entity type, as defined in OpenID Federation 1.0.
     federation_configuration_response:
       type: object
       properties:
@@ -18994,7 +19883,10 @@ components:
           type: string
           enum:
             - OK
+            - OK_JWT
             - ACCEPTED
+            - ACCEPTED_JWT
+            - BAD_REQUEST
             - UNAUTHORIZED
             - FORBIDDEN
             - INTERNAL_SERVER_ERROR
@@ -19184,7 +20076,7 @@ components:
           type: string
           description: The ticket.
         info:
-          type: string
+          $ref: '#/components/schemas/authorization_ticket_info'
           description: The information about the ticket.
     authorization_ticket_update_response:
       type: object
@@ -19523,6 +20415,31 @@ components:
           example:
             resultCode: 404
             resultMessage: ''
+    '429':
+      description: The request exceeded the request rate permitted for the endpoint.
+      headers:
+        Retry-After:
+          description: The number of seconds to wait before retrying the request.
+          schema:
+            type: integer
+            example: 1
+        RateLimit-Remaining:
+          description: The number of requests remaining in the next second.
+          schema:
+            type: integer
+            example: 10
+        RateLimit-Reset:
+          description: The number of seconds to wait before the request rate is fully replenished.
+          schema:
+            type: integer
+            example: 1
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/result'
+          example:
+            resultCode: A001311
+            resultMessage: '[A001311] /auth/authorization,  Too many requests, retry after 1 seconds. (Entity: 23769878923/87122303)'
     '500':
       description: ''
       content:
@@ -19532,3 +20449,45 @@ components:
           example:
             resultCode: A001101
             resultMessage: '[A001101] /auth/authorization, Authlete Server error.'
+    idp_400:
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/idp_error'
+          example:
+            error: Unknown user or invalid access token
+    idp_401:
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/idp_error'
+    idp_403:
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/idp_error'
+          example:
+            error: No access to organization for this user
+    idp_500:
+      description: ''
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/idp_error'
+          example:
+            error: An internal error occurred. Please try again later.
+x-speakeasy-retries:
+  strategy: backoff
+  backoff:
+    initialInterval: 500
+    maxInterval: 16000
+    maxElapsedTime: 60000
+    exponent: 2
+  statusCodes:
+    - 5XX
+    - 429
+  retryConnectionErrors: true
+x-speakeasy-timeout: 5000
