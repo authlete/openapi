@@ -2928,6 +2928,71 @@ paths:
       operationId: client_granted_scopes_delete_by_subject_api
       tags:
         - Client Management
+  /api/{serviceId}/clients:
+    get:
+      summary: /api/{serviceId}/clients API
+      description: |
+        Retrieve the clients in the requested service via cursor based iteration.
+      parameters:
+        - in: path
+          name: serviceId
+          description: The ID of the service to retrieve a list of clients from.
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          required: false
+          description: |
+            This should be set to the value of `nextCursor` from a previous call to this endpoint. Which will retrieve the
+            next set of clients available and receive the next available set. If this is not provided the list operation 
+            will start from the beginning.
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            format: int32
+          required: false
+          description: |
+            The maximum amount of results to return from this request. This value will be clamped between 1 and the allowed 
+            maximum. The default will be used if no value is provided.
+        - in: query
+          name: includeTotalCount
+          schema:
+            type: boolean
+          required: false
+          description: |
+            Indicates whether the `totalCount` property should be calculated and included in the response, otherwise it will
+            be unset. For some large datasets this can be expensive and is not always required to calculate.
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/client_cursor_list_response'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '500':
+          $ref: '#/components/responses/500'
+      operationId: client_cursor_list_api
+      x-speakeasy-pagination:
+        type: cursor
+        inputs:
+          - name: cursor
+            in: parameters
+            type: cursor
+        outputs:
+          nextCursor: $.nextCursor
+      tags:
+        - Client Management
   /api/{serviceId}/auth/authorization:
     post:
       summary: Process Authorization Request
@@ -14160,6 +14225,32 @@ components:
         resultMessage:
           type: string
           description: A short message which explains the result of the API call.
+    client_cursor_list_response:
+      type: object
+      properties:
+        limit:
+          type: integer
+          format: int32
+          description: |
+            The clamped requested limit of clients to return from the request.
+        nextCursor:
+          type: string
+          description: |
+            If there are more entries to retrieve this value will be generated and returned. The next call to this 
+            endpoint should use this value as the `cursor` to continue to continue to retrieve the remaining clients from the
+            correct point. If there are no further clients to list this property will not be set.
+        totalCount:
+          type: integer
+          format: int32
+          description: |
+            The total number of clients that belong to the service. This doesn't mean the number of clients
+            contained in the response.
+        entities:
+          type: array
+          items:
+            $ref: '#/components/schemas/client'
+          description: |
+            The list of clients.
     cimd_options:
       type: object
       description: |
