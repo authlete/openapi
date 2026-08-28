@@ -2928,6 +2928,71 @@ paths:
       operationId: client_granted_scopes_delete_by_subject_api
       tags:
         - Client Management
+  /api/{serviceId}/client:
+    get:
+      summary: List Clients (Cursor Pagination)
+      description: |
+        Retrieve the clients in the requested service via cursor based iteration.
+      parameters:
+        - in: path
+          name: serviceId
+          description: The ID of the service to retrieve a list of clients from.
+          required: true
+          schema:
+            type: integer
+        - in: query
+          name: cursor
+          schema:
+            type: string
+          required: false
+          description: |
+            This should be set to the value of `nextCursor` from a previous call to this endpoint. Which will retrieve the
+            next set of clients available and receive the next available set. If this is not provided the list operation 
+            will start from the beginning.
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            format: int32
+          required: false
+          description: |
+            The maximum amount of results to return from this request. This value will be clamped between 1 and the allowed 
+            maximum. The default will be used if no value is provided.
+        - in: query
+          name: includeTotalCount
+          schema:
+            type: boolean
+          required: false
+          description: |
+            Indicates whether the `totalCount` property should be calculated and included in the response, otherwise it will
+            be unset. For some large datasets this can be expensive and is not always required to calculate.
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/client_cursor_list_response'
+        '400':
+          $ref: '#/components/responses/400'
+        '401':
+          $ref: '#/components/responses/401'
+        '403':
+          $ref: '#/components/responses/403'
+        '500':
+          $ref: '#/components/responses/500'
+      operationId: client_cursor_list_api
+      x-speakeasy-pagination:
+        type: cursor
+        inputs:
+          - name: cursor
+            in: parameters
+            type: cursor
+        outputs:
+          nextCursor: $.nextCursor
+      tags:
+        - Client Management
   /api/{serviceId}/auth/authorization:
     post:
       summary: Process Authorization Request
@@ -11623,6 +11688,7 @@ components:
             $ref: '#/components/schemas/tagged_value'
         attributes:
           type: array
+          nullable: true
           description: The attributes of the scope.
           items:
             $ref: '#/components/schemas/pair'
@@ -11654,9 +11720,11 @@ components:
           description: The sequential number of the service. The value of this property is assigned by Authlete.
         serviceName:
           type: string
+          nullable: true
           description: The name of this service.
         issuer:
           type: string
+          nullable: true
           description: |
             The issuer identifier of the service.
 
@@ -11666,6 +11734,7 @@ components:
             and `issuer` property in the [OpenID Provider Metadata](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata).
         description:
           type: string
+          nullable: true
           description: The description about the service.
         apiKey:
           type: integer
@@ -11674,12 +11743,14 @@ components:
           description: The service ID used in Authlete API calls. The value of this property is assigned by Authlete.
         apiSecret:
           type: string
+          nullable: true
           readOnly: true
           description: |
             The API secret of this service. This value is assigned by Authlete and 
             is used for service authentication in API calls.
         tokenBatchNotificationEndpoint:
           type: string
+          nullable: true
           format: uri
           description: |
             The endpoint for batch token notifications. This endpoint is called when 
@@ -11703,41 +11774,65 @@ components:
             The maximum number of client applications that a developer can have.
         developerAuthenticationCallbackEndpoint:
           type: string
+          nullable: true
           format: uri
           description: |
             The endpoint for developer authentication callbacks. This is used when 
             developers log into the developer portal.
         developerAuthenticationCallbackApiKey:
           type: string
+          nullable: true
           description: |
             The API key for basic authentication at the developer authentication 
             callback endpoint.
         developerAuthenticationCallbackApiSecret:
           type: string
+          nullable: true
           description: |
             The API secret for basic authentication at the developer authentication 
             callback endpoint.
         supportedSnses:
           type: array
+          nullable: true
           items:
             type: string
             enum:
               - FACEBOOK
           description: |
-            Social login services (SNS) that this service supports for end-user 
+            Social login services (SNS) that this service supports for end-user
             authentication.
         snsCredentials:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/sns_credentials'
           description: |
-            The credentials for social login services (SNS) that are used for 
+            The credentials for social login services (SNS) that are used for
             end-user authentication.
+        supportedDeveloperSnses:
+          type: array
+          nullable: true
+          items:
+            type: string
+            enum:
+              - FACEBOOK
+          description: |
+            Social login services (SNS) that this service supports for developer
+            authentication.
+        developerSnsCredentials:
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/sns_credentials'
+          description: |
+            The credentials for social login services (SNS) that are used for
+            developer authentication.
         clientIdAliasEnabled:
           type: boolean
           description: Deprecated. Always `true`.
         metadata:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/pair'
           description: |
@@ -11763,6 +11858,7 @@ components:
             the UNIX epoch (1970-01-01).
         authenticationCallbackEndpoint:
           type: string
+          nullable: true
           format: uri
           description: |
             A Web API endpoint for user authentication which is to be prepared on the service side.
@@ -11774,6 +11870,7 @@ components:
             a `POST` request to this endpoint.
         authenticationCallbackApiKey:
           type: string
+          nullable: true
           description: |
             API key for basic authentication at the authentication callback endpoint.
 
@@ -11781,10 +11878,12 @@ components:
             making a request to the authentication callback endpoint.
         authenticationCallbackApiSecret:
           type: string
+          nullable: true
           description: API secret for `basic` authentication at the authentication callback endpoint.
         supportedAcrs:
           readOnly: true
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -11794,6 +11893,7 @@ components:
             property in the [OpenID Provider Metadata](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata).
         supportedGrantTypes:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/grant_type'
           description: |
@@ -11803,6 +11903,7 @@ components:
             [OpenID Provider Metadata](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata).
         supportedResponseTypes:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/response_type'
           description: |
@@ -11813,6 +11914,7 @@ components:
             [OpenID Provider Metadata](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata).
         supportedAuthorizationDetailsTypes:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -11822,6 +11924,7 @@ components:
             Rich Authorization Requests" (RAR) for details.
         supportedServiceProfiles:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/service_profile'
           description: |
@@ -11846,6 +11949,7 @@ components:
             `error_uri` response parameter in error responses.
         authorizationEndpoint:
           type: string
+          nullable: true
           format: uri
           description: |
             The authorization endpoint of the service.
@@ -11862,6 +11966,7 @@ components:
             The path of the endpoint is `/api/auth/authorization/direct/service-api-key`.
         supportedUiLocales:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -11872,6 +11977,7 @@ components:
             The value of this property is used as `ui_locales_supported` property in the [OpenID Provider Metadata](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata).
         supportedDisplays:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/display'
           description: |
@@ -11912,6 +12018,7 @@ components:
             The duration of authorization codes in seconds.
         tokenEndpoint:
           type: string
+          nullable: true
           format: uri
           description: |
             The [token endpoint](https://tools.ietf.org/html/rfc6749#section-3.2) of the service.
@@ -11927,6 +12034,7 @@ components:
             is `/api/auth/token/direct/service-api-key`.
         supportedTokenAuthMethods:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/client_auth_method'
           description: |
@@ -11942,6 +12050,7 @@ components:
             This flag should not be set unless you have special reasons.
         revocationEndpoint:
           type: string
+          nullable: true
           format: uri
           description: |
             The [revocation endpoint](https://tools.ietf.org/html/rfc7009) of the service.
@@ -11952,12 +12061,14 @@ components:
           description: 'The flag to indicate whether the direct revocation endpoint is enabled or not. The URL of the endpoint is `/api/auth/revocation/direct/service-api-key`. '
         supportedRevocationAuthMethods:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/client_auth_method'
           description: |
             Client authentication methods supported at the revocation endpoint.
         introspectionEndpoint:
           type: string
+          nullable: true
           description: The URI of the introspection endpoint.
           format: uri
         directIntrospectionEndpointEnabled:
@@ -11965,12 +12076,14 @@ components:
           description: 'The flag to indicate whether the direct userinfo endpoint is enabled or not. The path of the endpoint is `/api/auth/userinfo/direct/{serviceApiKey}`. '
         supportedIntrospectionAuthMethods:
           type: array
+          nullable: true
           description: |
             Client authentication methods supported at the introspection endpoint.
           items:
             $ref: '#/components/schemas/client_auth_method'
         pushedAuthReqEndpoint:
           type: string
+          nullable: true
           description: |
             The URI of the pushed authorization request endpoint.
 
@@ -12046,12 +12159,14 @@ components:
             The flag to indicate whether this service validates certificate chains during PKI-based client mutual TLS authentication.
         trustedRootCertificates:
           type: array
+          nullable: true
           items:
             type: string
           description: |
             The list of root certificates trusted by this service for PKI-based client mutual TLS authentication.
         mtlsEndpointAliases:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/named_uri'
           description: |
@@ -12079,6 +12194,7 @@ components:
 
         accessTokenType:
           type: string
+          nullable: true
           description: |
             The access token type.
 
@@ -12109,6 +12225,7 @@ components:
           $ref: '#/components/schemas/jws_alg'
         accessTokenSignatureKeyId:
           type: string
+          nullable: true
           description: |
             The key ID to identify a JWK used for signing access tokens.
 
@@ -12148,6 +12265,7 @@ components:
             See [RFC 6749 6. Refreshing an Access Token](https://tools.ietf.org/html/rfc6749#section-6), as to how to get a new access token using a refresh token.
         supportedScopes:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/scope'
           description: |
@@ -12209,6 +12327,7 @@ components:
             The clock skew is taken into consideration when time-related claims in a JWT (e.g. `exp`, `iat`, `nbf`) are verified.
         supportedClaimTypes:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/claim_type'
           description: |
@@ -12219,6 +12338,7 @@ components:
             Metadata](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata).
         supportedClaimLocales:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -12230,6 +12350,7 @@ components:
             [OpenID Provider Metadata](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata).
         supportedClaims:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -12290,6 +12411,7 @@ components:
 
         jwksUri:
           type: string
+          nullable: true
           format: uri
           description: |
             The URL of the service's [JSON Web Key Set](https://tools.ietf.org/html/rfc7517) document. For
@@ -12308,6 +12430,7 @@ components:
             is `/api/service/jwks/get/direct/service-api-key`. '
         jwks:
           type: string
+          nullable: true
           description: |
             The content of the service's [JSON Web Key Set](https://tools.ietf.org/html/rfc7517) document.
 
@@ -12318,6 +12441,7 @@ components:
             Encryption](https://openid.net/specs/openid-connect-core-1_0.html#SigEnc) for details.
         idTokenSignatureKeyId:
           type: string
+          nullable: true
           description: |
             The key ID to identify a JWK used for ID token signature using an asymmetric key.
           x-mint:
@@ -12341,6 +12465,7 @@ components:
 
         userInfoSignatureKeyId:
           type: string
+          nullable: true
           description: |
             The key ID to identify a JWK used for user info signature using an asymmetric key.
           x-mint:
@@ -12364,6 +12489,7 @@ components:
 
         authorizationSignatureKeyId:
           type: string
+          nullable: true
           description: |
             The key ID to identify a JWK used for signing authorization responses using an asymmetric key.
           x-mint:
@@ -12386,6 +12512,7 @@ components:
 
         userInfoEndpoint:
           type: string
+          nullable: true
           description: |
             The [user info endpoint](http://openid.net/specs/openid-connect-core-1_0.html#UserInfo) of the
             service. A URL that starts with `https://`. For example, `https://example.com/auth/userinfo`.
@@ -12404,6 +12531,7 @@ components:
             is supported.
         registrationEndpoint:
           type: string
+          nullable: true
           description: |
             The [registration endpoint](http://openid.net/specs/openid-connect-registration-1_0.html#ClientRegistration)
             of the service. A URL that starts with `https://`. For example, `https://example.com/auth/registration`.
@@ -12412,6 +12540,7 @@ components:
           format: uri
         registrationManagementEndpoint:
           type: string
+          nullable: true
           description: |
             The URI of the registration management endpoint. If dynamic client registration is supported,
             and this is set, this URI will be used as the basis of the client's management endpoint by appending
@@ -12420,6 +12549,7 @@ components:
           format: uri
         policyUri:
           type: string
+          nullable: true
           description: |
             The URL of the "Policy" of the service.
 
@@ -12427,6 +12557,7 @@ components:
           format: uri
         tosUri:
           type: string
+          nullable: true
           description: |
             The URL of the "Terms Of Service" of the service.
 
@@ -12434,6 +12565,7 @@ components:
           format: uri
         serviceDocumentation:
           type: string
+          nullable: true
           description: |
             The URL of a page where documents for developers can be found.
 
@@ -12441,12 +12573,14 @@ components:
           format: uri
         backchannelAuthenticationEndpoint:
           type: string
+          nullable: true
           description: |
             The URI of backchannel authentication endpoint, which is defined in the specification of [CIBA
             (Client Initiated Backchannel Authentication)](https://openid.net/specs/openid-client-initiated-backchannel-authentication-core-1_0.html).
           format: uri
         supportedBackchannelTokenDeliveryModes:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/delivery_mode'
           description: |
@@ -12497,6 +12631,7 @@ components:
 
         deviceAuthorizationEndpoint:
           type: string
+          nullable: true
           format: uri
           description: |
             The URI of the device authorization endpoint.
@@ -12504,12 +12639,14 @@ components:
             Device authorization endpoint is defined in the specification of OAuth 2.0 Device Authorization Grant.
         deviceVerificationUri:
           type: string
+          nullable: true
           format: uri
           description: |
             The verification URI for the device flow. This URI is used as the value of the `verification_uri`
             parameter in responses from the device authorization endpoint.
         deviceVerificationUriComplete:
           type: string
+          nullable: true
           format: uri
           description: |
             The verification URI for the device flow with a placeholder for a user code. This URI is used
@@ -12547,7 +12684,9 @@ components:
             seconds in device flow. This is used as the value of the `interval` property in responses from
             the device authorization endpoint.
         userCodeCharset:
-          $ref: '#/components/schemas/user_code_charset'
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/user_code_charset'
         userCodeLength:
           type: integer
           format: int32
@@ -12555,6 +12694,7 @@ components:
             The length of end-user verification codes (`user_code`) for Device Flow.
         supportedTrustFrameworks:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -12562,12 +12702,14 @@ components:
             [metadata](https://openid.net/specs/openid-connect-4-identity-assurance-1_0.html#rfc.section.7).
         supportedEvidence:
           type: array
+          nullable: true
           items:
             type: string
           description: |
             Evidence supported by this service. This corresponds to the `evidence_supported` [metadata](https://openid.net/specs/openid-connect-4-identity-assurance-1_0.html#rfc.section.7).
         supportedIdentityDocuments:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -12575,6 +12717,7 @@ components:
             [metadata](https://openid.net/specs/openid-connect-4-identity-assurance-1_0.html#rfc.section.7).
         supportedVerificationMethods:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -12582,6 +12725,7 @@ components:
             [metadata](https://openid.net/specs/openid-connect-4-identity-assurance-1_0.html#rfc.section.7).
         supportedVerifiedClaims:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -12590,10 +12734,12 @@ components:
         verifiedClaimsValidationSchemaSet:
           $ref: '#/components/schemas/verified_claims_validation_schema'
           type: string
+          nullable: true
           description: |
             OIDC4IDA / verifiedClaimsValidationSchemaSet
         attributes:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/pair'
           description: |
@@ -12652,6 +12798,7 @@ components:
 
         supportedCustomClientMetadata:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -12805,6 +12952,7 @@ components:
             server you are using does not support HSM.
         hsks:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/hsk'
           description: |
@@ -12815,6 +12963,7 @@ components:
             only by `/api/hsk/*` APIs.
         grantManagementEndpoint:
           type: string
+          nullable: true
           description: |
             The URL of the grant management endpoint.
         grantManagementActionRequired:
@@ -12876,6 +13025,7 @@ components:
             This property affects behaviors of `/api/client/registration` and other family APIs.
         endSessionEndpoint:
           type: string
+          nullable: true
           format: uri
           description: |
             The endpoint for clients ending the sessions.
@@ -12884,6 +13034,13 @@ components:
 
             The value of this property is used as `end_session_endpoint` property in the [OpenID Provider
             Metadata](https://openid.net/specs/openid-connect-discovery-1_0.html#ProviderMetadata).
+        challengeEndpoint:
+          type: string
+          nullable: true
+          format: uri
+          description: |
+            The URL of the challenge endpoint, which is defined in OAuth 2.0
+            Attestation-Based Client Authentication.
         loopbackRedirectionUriVariable:
           type: boolean
           description: |
@@ -12968,6 +13125,7 @@ components:
             responses.
         authorityHints:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -12981,12 +13139,14 @@ components:
             flag indicating whether this service supports OpenID Connect Federation 1
         federationJwks:
           type: string
+          nullable: true
           description: |
             JWK Set document containing keys that are used to sign (1) self-signed
             entity statement of this service and (2) the response from
             `signed_jwks_uri`.
         federationSignatureKeyId:
           type: string
+          nullable: true
           description: |
             A key ID to identify a JWK used to sign the entity configuration and
             the signed JWK Set.
@@ -12996,18 +13156,21 @@ components:
             The duration of the entity configuration in seconds.
         federationRegistrationEndpoint:
           type: string
+          nullable: true
           description: |
             The URI of the federation registration endpoint. This property corresponds
             to the `federation_registration_endpoint` server metadata that is
             defined in OpenID Connect Federation 1.0.
         organizationName:
           type: string
+          nullable: true
           description: |
             The human-readable name representing the organization that operates
             this service. This property corresponds to the `organization_name`
             server metadata that is defined in OpenID Connect Federation 1.0.
         predefinedTransformedClaims:
           type: string
+          nullable: true
           description: |
             The transformed claims predefined by this service in JSON format.
             This property corresponds to the `transformed_claims_predefined`
@@ -13021,12 +13184,14 @@ components:
             period.
         signedJwksUri:
           type: string
+          nullable: true
           description: |
             The URI of the endpoint that returns this service's JWK Set document in
             the JWT format. This property corresponds to the `signed_jwks_uri`
             server metadata defined in OpenID Connect Federation 1.0.
         supportedAttachments:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/attachment_type'
           description: |
@@ -13035,6 +13200,7 @@ components:
             implementer's draft of OpenID Connect for Identity Assurance 1.0.
         supportedDigestAlgorithms:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -13045,6 +13211,7 @@ components:
             Assurance 1.0.
         supportedDocuments:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -13052,6 +13219,7 @@ components:
             to the `documents_supported` server metadata.
         supportedDocumentsMethods:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -13065,6 +13233,7 @@ components:
             `documents_methods_supported`.
         supportedDocumentsValidationMethods:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -13073,6 +13242,7 @@ components:
             metadata which was added by the third implementer's draft of
         supportedDocumentsVerificationMethods:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -13082,6 +13252,7 @@ components:
             [OpenID Connect for Identity Assurance 1.0](https://openid.net/specs/openid-connect-4-identity-assurance-1_0.html)
         supportedElectronicRecords:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -13091,6 +13262,7 @@ components:
             [OpenID Connect for Identity Assurance 1.0](https://openid.net/specs/openid-connect-4-identity-assurance-1_0.html)
         supportedClientRegistrationTypes:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/client_registration_type'
         tokenExchangeByIdentifiableClientsOnly:
@@ -13142,6 +13314,7 @@ components:
             requests whose "software_id" has already been used previously.
         trustAnchors:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/trust_anchor'
           description: |
@@ -13159,6 +13332,7 @@ components:
             is used.
         supportedDocumentsCheckMethods:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -13186,6 +13360,7 @@ components:
             for this service is enabled or not.
         credentialJwksUri:
           type: string
+          nullable: true
           description: |
             The URL at which the JWK Set document of the credential issuer is
             exposed.
@@ -13212,10 +13387,12 @@ components:
             result of a credential request or a batch credential request.
         introspectionSignatureKeyId:
           type: string
+          nullable: true
           description: |
             The key ID of the key for signing introspection responses.
         resourceSignatureKeyId:
           type: string
+          nullable: true
           description: |
             The key ID of the key for signing introspection responses.
         userPinLength:
@@ -13225,6 +13402,7 @@ components:
             The default length of user PINs.
         supportedPromptValues:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/prompt'
           description: |
@@ -13236,11 +13414,13 @@ components:
             reissuance in the refresh token flow.
         credentialJwks:
           type: string
+          nullable: true
           description: |
             The JWK Set document containing private keys that are used to sign
             verifiable credentials.
         fapiModes:
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/fapi_mode'
           description: |
@@ -13259,9 +13439,12 @@ components:
           description: |
             The default duration of verifiable credentials in seconds.
         credentialIssuerMetadata:
-          $ref: '#/components/schemas/credential_issuer_metadata'
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/credential_issuer_metadata'
         idTokenAudType:
           type: string
+          nullable: true
           description: |
             The type of the `aud` claim in ID tokens.
         nativeSsoSupported:
@@ -13278,6 +13461,7 @@ components:
             and [RFC 8414 §2](https://www.rfc-editor.org/rfc/rfc8414.html#section-2) for background. Native SSO is available in Authlete 3.0 and later.
         oid4vciVersion:
           type: string
+          nullable: true
           description: |
             Version of the [OpenID for Verifiable Credential Issuance](https://www.authlete.com/developers/oid4vci/) (OID4VCI) specification to support.
 
@@ -13306,6 +13490,7 @@ components:
             on the allowlist are used.
         cimdAllowlist:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -13328,6 +13513,7 @@ components:
             `false`, query parameters are disallowed for CIMD requests.
         cimdMetadataPolicy:
           type: string
+          nullable: true
           description: |
             The metadata policy applied to client metadata obtained through the CIMD
             mechanism. The value must follow the metadata policy grammar defined in
@@ -13365,6 +13551,7 @@ components:
             attester roots is accepted.
         clientAttesterRoots:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -13372,6 +13559,7 @@ components:
             x5c chain in Client Attestation JWTs.
         keyAttesterRoots:
           type: array
+          nullable: true
           items:
             type: string
           description: |
@@ -13387,6 +13575,26 @@ components:
           description: |
             The flag indicating whether this service includes a `sid` (session ID)
             claim in ID tokens, supporting per-session backchannel logout.
+        haipVersion:
+          type: string
+          nullable: true
+          description: |
+            The HAIP version to comply with. Valid values for this property are as
+            follows: `"1.0"`. If this property is set, requests to this service
+            undergo additional validation based on the specified version of the
+            [HAIP](https://openid.net/specs/openid4vc-high-assurance-interoperability-profile-1_0.html)
+            specification.
+          x-mint:
+            metadata:
+              description: "The HAIP version to comply with. Valid values for this property are as follows: `\"1.0\"`. If this property is set, requests to this service undergo additional validation based on the specified version of the [HAIP](https://openid.net/specs/openid4vc-high-assurance-interoperability-profile-1_0.html) specification."
+            content: |
+              <Accordion title="Full description" defaultOpen={false}>
+              Note that even if this property is not set, additional validation
+              based on the HAIP specification is performed if the `Client`'s
+              `haipVersion` is set or if a scope with the `haip` attribute is
+              included in the request.
+              </Accordion>
+
     sns_credentials:
       type: object
       properties:
@@ -13425,6 +13633,7 @@ components:
           description: The value part.
     user_code_charset:
       type: string
+      nullable: true
       description: |
         The character set for end-user verification codes (`user_code`) for Device Flow.
       enum:
@@ -14160,6 +14369,32 @@ components:
         resultMessage:
           type: string
           description: A short message which explains the result of the API call.
+    client_cursor_list_response:
+      type: object
+      properties:
+        limit:
+          type: integer
+          format: int32
+          description: |
+            The clamped requested limit of clients to return from the request.
+        nextCursor:
+          type: string
+          description: |
+            If there are more entries to retrieve this value will be generated and returned. The next call to this 
+            endpoint should use this value as the `cursor` to continue to continue to retrieve the remaining clients from the
+            correct point. If there are no further clients to list this property will not be set.
+        totalCount:
+          type: integer
+          format: int32
+          description: |
+            The total number of clients that belong to the service. This doesn't mean the number of clients
+            contained in the response.
+        entities:
+          type: array
+          items:
+            $ref: '#/components/schemas/client'
+          description: |
+            The list of clients.
     cimd_options:
       type: object
       description: |
@@ -15076,6 +15311,9 @@ components:
             - CONSENT_REQUIRED
             - INTERACTION_REQUIRED
             - INVALID_TARGET
+            - TEMPORARILY_UNAVAILABLE
+            - INVALID_SCOPE
+            - UNAUTHORIZED_CLIENT
           description: |
             The reason of the failure of the authorization request.
             For more details, see [NO_INTERACTION] in the description of `/auth/authorization` API.
@@ -15962,6 +16200,9 @@ components:
             - UNKNOWN
             - INVALID_RESOURCE_OWNER_CREDENTIALS
             - INVALID_TARGET
+            - INVALID_CLIENT
+            - UNAUTHORIZED_CLIENT
+            - INVALID_SCOPE
           description: |
             The reason of the failure of the token request.
     token_fail_response:
@@ -17202,7 +17443,6 @@ components:
       type: object
       required:
         - accessToken
-        - refreshToken
       properties:
         accessToken:
           type: string
@@ -19870,6 +20110,15 @@ components:
           description: The access token that came along with the credential request.
         order:
           $ref: '#/components/schemas/credential_issuance_order'
+        denied:
+          type: boolean
+          description: |
+            Set to `true` to signal that the credential issuer is declining to issue the
+            requested credential. When set, the response will contain `"error":"credential_request_denied"`
+            and the action in the response will be `BAD_REQUEST`.
+        interval:
+          type: integer
+          description: The minimum polling interval in seconds for deferred credential issuance.
     vci_single_issue_response:
       type: object
       properties:
