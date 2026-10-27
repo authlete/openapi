@@ -11492,6 +11492,20 @@ components:
             The flag indicating whether to refrain from issuing an ID token when the `openid` scope has been removed from the scopes to be granted by the `scopes` request parameter of the `/auth/authorization/issue` API.
 
             Flows whose `response_type` contains `id_token`, and flows that requested Native SSO, are not affected, because both require an ID token.
+        returnFullPayload:
+          type: boolean
+          description: |
+            The flag indicating whether the `/auth/authorization`, `/auth/token/get/list` and `/client/authorization/get/list` APIs return full representations of the service and its clients.
+          x-mint:
+            metadata:
+              description: "The flag indicating whether the `/auth/authorization`, `/auth/token/get/list` and `/client/authorization/get/list` APIs return full representations of the service and its clients."
+            content: |
+              <Accordion title="Full description" defaultOpen={false}>
+              When this flag is `true`, those APIs return full representations. When this flag is `false`, those APIs return limited representations that contain only a subset of the properties. Properties omitted from a limited representation appear with their default values (e.g. `0`, `false` or `null`) after deserialization by SDKs, which does not reflect the actual configuration.
+
+              When this property is omitted from a `/service/create` request, the flag is `false`.
+              </Accordion>
+
         supportedDocumentsCheckMethods:
           type: array
           nullable: true
