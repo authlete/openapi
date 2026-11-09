@@ -10242,6 +10242,7 @@ components:
             The number of the organization that owns this service. This value is assigned by Authlete.
         clientsPerDeveloper:
           type: integer
+          deprecated: true
           format: int32
           description: |
             The maximum number of client applications that a developer can have.
@@ -10326,6 +10327,7 @@ components:
             The time at which this service was last modified. The value is represented as milliseconds since the UNIX epoch (1970-01-01).
         authenticationCallbackEndpoint:
           type: string
+          deprecated: true
           nullable: true
           format: uri
           description: |
@@ -10336,6 +10338,7 @@ components:
             The user authentication at the authorization endpoint provided by Authlete is performed by making a `POST` request to this endpoint.
         authenticationCallbackApiKey:
           type: string
+          deprecated: true
           nullable: true
           description: |
             API key for basic authentication at the authentication callback endpoint.
@@ -10343,6 +10346,7 @@ components:
             If the value is not empty, Authlete generates Authorization header for Basic authentication when making a request to the authentication callback endpoint.
         authenticationCallbackApiSecret:
           type: string
+          deprecated: true
           nullable: true
           description: API secret for `basic` authentication at the authentication callback endpoint.
         supportedAcrs:
@@ -11578,6 +11582,7 @@ components:
             The key ID of the key for signing introspection responses.
         userPinLength:
           type: integer
+          deprecated: true
           format: int32
           description: |
             The default length of user PINs.
