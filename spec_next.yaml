@@ -11522,6 +11522,41 @@ components:
               When this property is omitted from a `/service/create` request, the flag is `false`.
               </Accordion>
 
+        protectedResources:
+          type: array
+          nullable: true
+          items:
+            type: string
+          description: |
+            The resource identifiers of the protected resources that can be used with this authorization server. This property corresponds to the `protected_resources` server metadata defined in [RFC 9728 OAuth 2.0 Protected Resource Metadata, Section 4](https://www.rfc-editor.org/rfc/rfc9728.html#section-4).
+          x-mint:
+            metadata:
+              description: "The resource identifiers of the protected resources that can be used with this authorization server. This property corresponds to the `protected_resources` server metadata defined in [RFC 9728 OAuth 2.0 Protected Resource Metadata, Section 4](https://www.rfc-editor.org/rfc/rfc9728.html#section-4)."
+            content: |
+              <Accordion title="Full description" defaultOpen={false}>
+              Each value must be an `https` URL with no fragment component (`http` is allowed only for a loopback host), and values must not be duplicated. When this property is empty or unset, the `protected_resources` parameter is omitted from the published metadata. Clients typically use these identifiers as the value of the `resource` request parameter defined in RFC 8707.
+              </Accordion>
+
+        clientAssertionSignAlgOptional:
+          type: boolean
+          description: |
+            The flag indicating whether the signature algorithm of client assertions is optional, that is, whether a client may omit the `token_endpoint_auth_signing_alg` client metadata.
+          x-mint:
+            metadata:
+              description: "The flag indicating whether the signature algorithm of client assertions is optional, that is, whether a client may omit the `token_endpoint_auth_signing_alg` client metadata."
+            content: |
+              <Accordion title="Full description" defaultOpen={false}>
+              This flag is related to the JWT-based client authentication methods (`private_key_jwt`, `client_secret_jwt` and `spiffe_jwt`). It controls only the default value assigned in client registration.
+
+              When this flag is `false` (the default), a default value is assigned when the `token_endpoint_auth_signing_alg` client metadata is omitted. In dynamic client registration (RFC 7591), `RS256` is assigned when the client authentication method is `private_key_jwt` and `HS256` when it is `client_secret_jwt`. In client registration of OpenID Federation 1.0, `RS256` is assigned.
+
+              When this flag is `true`, no default value is assigned to the `token_endpoint_auth_signing_alg` client metadata when it is omitted.
+
+              Regardless of this flag, when a signature algorithm is registered for a client, the client assertion must be signed with that algorithm. When no signature algorithm is registered, the algorithm specified by the `alg` header parameter of the client assertion is used. The algorithm still has to be suitable for the client authentication method (asymmetric for `private_key_jwt` and `spiffe_jwt`, symmetric for `client_secret_jwt`).
+
+              This flag does not change the signature algorithm that has already been registered for existing clients.
+              </Accordion>
+
         supportedDocumentsCheckMethods:
           type: array
           nullable: true
